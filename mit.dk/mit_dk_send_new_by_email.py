@@ -206,7 +206,7 @@ if tokens:
     for message in messages['results']:
         if message['read'] == False:
             if mailserver_connect == False:
-                server = smtplib.SMTP(email_data['emailserver'], email_data['emailserverport'])
+                server = smtplib.SMTP(email_data['emailserver'], int(email_data['emailserverport']))
                 server.ehlo()
                 server.starttls()
                 server.login(email_data['emailusername'], email_data['emailpassword'])
