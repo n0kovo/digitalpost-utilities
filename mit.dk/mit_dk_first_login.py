@@ -1,6 +1,7 @@
 # Logs in to mit.dk og saves tokens needed for further requests.
 # Method from https://github.com/dk/Net-MitDK/. Thank you.
 from seleniumwire import webdriver
+import chromedriver_autoinstaller
 import requests
 from bs4 import BeautifulSoup
 import http.cookies
@@ -11,6 +12,8 @@ from hashlib import sha256
 import string
 import secrets
 from mit_dk_configuration import tokens_filename
+
+chromedriver_autoinstaller.install()
 
 def random_string(size):        
     letters = string.ascii_lowercase+string.ascii_uppercase+string.digits+string.punctuation+string.whitespace           

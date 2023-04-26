@@ -1,10 +1,13 @@
 # Logs in to post.borger.dk and saves cookies needed for further
 # API requests and authorization renewal.
 from seleniumwire import webdriver
+import chromedriver_autoinstaller
 import requests
 import http.cookies
 import pickle
 from post_borger_dk_configuration import cookies_filename
+
+chromedriver_autoinstaller.install()
 
 def login():
     session = requests.Session()
