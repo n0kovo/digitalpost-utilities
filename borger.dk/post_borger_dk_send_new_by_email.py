@@ -37,7 +37,7 @@ for mailbox in mailboxes['mailboxes']:
         total_elements = unread_messages['totalElements']
         if total_elements:
             if mailserver_connect == False:
-                server = smtplib.SMTP(email_data['emailserver'], email_data['emailserverport'])
+                server = smtplib.SMTP(email_data['emailserver'], int(email_data['emailserverport']))
                 server.ehlo()
                 server.starttls()
                 server.login(email_data['emailusername'], email_data['emailpassword'])
