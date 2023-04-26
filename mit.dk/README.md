@@ -19,7 +19,7 @@ Steps to run
 Step one
 --------
 
-* Enter your e-mail and e-mail server details in `email_and_token_file_configuration_example.py` and save the file as `email_and_token_file_configuration.py`
+* Enter your e-mail and e-mail server details in `mit_dk_configuration_example.py` and save the file as `mit_dk_configuration.py`
 
 Step two
 --------
