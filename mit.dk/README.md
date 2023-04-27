@@ -18,7 +18,8 @@ Steps to run
 
 Step one
 --------
-
+* Clone repo: `git clone https://github.com/helmstedt/digitalpost-utilities.git`
+* Install dependencies: `cd digitalpost-utilities.git && python3 -m pip install -r requirements.txt`
 * Enter your e-mail and e-mail server details in `mit_dk_config.toml`.
 
 Step two
