@@ -13,7 +13,6 @@ from hashlib import sha256
 from time import sleep
 import sys
 
-import chromedriver_autoinstaller
 import requests
 from bs4 import BeautifulSoup
 from selenium.common.exceptions import TimeoutException
@@ -22,8 +21,6 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from seleniumwire import webdriver
-
-chromedriver_autoinstaller.install()
 
 # Load variables from config file
 with open("mit_dk_config.toml", "rb") as f:
