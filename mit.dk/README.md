@@ -8,7 +8,6 @@ Requirements
 * The files in the mit.dk folder in this repository.
 * Python and the packages defined in `requirements.txt`
 * A Danish NemID or MitID login for access to mit.dk.
-* A computer with a desktop browser for your first login to mit.dk. The program is set up for Chrome, but can be modified to work with e.g. Firefox.
 * A webdriver to run and monitor your browser from a Python script. If running Chrome, get `chromedriver` from https://chromedriver.chromium.org/ and put it in your PATH or at the same location as your files from this repository.
 * A server, service or PC that's on 24/7 to monitor mit.dk for new mails and keep your login active.
 * An e-mail address and the ability to send e-mails using SMTP.
