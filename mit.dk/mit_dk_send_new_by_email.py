@@ -252,16 +252,16 @@ if tokens:
         if message["read"] is False:
             if not MAILSERVER_CONNECT:
                 print(f"Connecting to {email_server}")
-            
+
                 if server_config["ssl"]:
                     try:
                         server = smtplib.SMTP(f"{email_server}")
                         server.starttls()
-                    
+
                     except SMTPNotSupportedError:
                         print(f"STARTTLS not supported on server")
                         print("Trying to connect without...")
-                    
+
                     except SMTPServerDisconnected:
                         pass
 
@@ -270,8 +270,6 @@ if tokens:
                 else:
                     server = smtplib.SMTP(f"{email_server}")
                     server.ehlo()
-            
-                
 
                 server.login(email_creds["username"], email_creds["password"])
                 MAILSERVER_CONNECT = True
