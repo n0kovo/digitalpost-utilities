@@ -1,9 +1,12 @@
-"""Sends unread messages from mit.dk to an e-mail."""
+"""
+Sends unread messages from mit.dk to an e-mail.
+"""
 import json
 import smtplib  # Sending e-mails
 import time
 import tomllib  # For parsing toml config file
-from email.mime.application import MIMEApplication  # Attaching files to e-mails
+from email.mime.application import \
+    MIMEApplication  # Attaching files to e-mails
 from email.mime.multipart import MIMEMultipart  # Creating multipart e-mails
 from email.mime.text import MIMEText  # Attaching text to e-mails
 
@@ -236,9 +239,7 @@ if tokens:
     for message in messages["results"]:
         if message["read"] == False:
             if mailserver_connect == False:
-                server = smtplib.SMTP(
-                    server_config["host"], int(server_config["port"])
-                )
+                server = smtplib.SMTP(server_config["host"], int(server_config["port"]))
                 server.ehlo()
                 server.starttls()
                 server.login(email_creds["username"], email_creds["password"])
@@ -248,7 +249,7 @@ if tokens:
             message_content = get_content(message)
 
             msg = MIMEMultipart("alternative")
-            msg["From"] = formataddr((sender, ))
+            msg["From"] = formataddr((sender,))
             msg["To"] = email_options["to"]
             msg["Subject"] = "mit.dk: " + label
 
@@ -295,9 +296,7 @@ if tokens:
                     )
                     msg.attach(part)
             print(f"Sender en mail fra mit.dk fra {sender} med emnet {label}")
-            server.sendmail(
-                email_options["from"], email_options["to"], msg.as_string()
-            )
+            server.sendmail(email_options["from"], email_options["to"], msg.as_string())
             mark_as_read(message)
     if mailserver_connect:
         server.quit()

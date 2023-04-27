@@ -8,13 +8,13 @@ import http.cookies
 import json
 import secrets
 import string
+import tomllib
 from hashlib import sha256
 from sys import exit
 from time import sleep
 
 import chromedriver_autoinstaller
 import requests
-import tomllib
 from bs4 import BeautifulSoup
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
