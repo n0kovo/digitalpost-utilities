@@ -175,6 +175,7 @@ login_url = (
 chrome_options = webdriver.ChromeOptions()
 chrome_options.add_argument("--log-level=3")
 chrome_options.add_argument("--headless")
+chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("start-maximized")
 
 # Disable webdriver tells
