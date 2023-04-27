@@ -2,6 +2,10 @@
 # File for storing authentication tokens
 tokens = "mit_dk_tokens.json"
 
+[mitid]
+# Your MitID username
+username = ""
+
 [email]
 [email.server]
 # Your mail server hostname, e.g. host.server.dk
@@ -11,12 +15,12 @@ port = ""
 
 [email.credentials]
 # Sender mail account username
-email_username = ""
+username = ""
 # Sender mail account password
-email_password = ""
+password = ""
 
 [email.options]
 # Sender e-mail, e.g. trump@usa.gov
-email_from = ""
+from = ""
 # Recipient e-mail, e.g. hillary@clinton.net
-email_to = ""
+to = ""

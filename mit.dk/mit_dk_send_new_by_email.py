@@ -5,8 +5,7 @@ import json
 import smtplib  # Sending e-mails
 import time
 import tomllib  # For parsing toml config file
-from email.mime.application import \
-    MIMEApplication  # Attaching files to e-mails
+from email.mime.application import MIMEApplication  # Attaching files to e-mails
 from email.mime.multipart import MIMEMultipart  # Creating multipart e-mails
 from email.mime.text import MIMEText  # Attaching text to e-mails
 
@@ -19,38 +18,42 @@ with open("mit_dk_config.toml", "rb") as f:
     config = tomllib.load(f)
 
 
-base_url = "https://gateway.mit.dk/view/client/"
+BASE_URL = "https://gateway.mit.dk/view/client/"
 session = requests.Session()
 
 
-def open_tokens():
+def open_tokens(filename):
+    """Opens the token file and returns the tokens as a dict."""
     try:
-        with open(config["files"]["tokens"], "r", encoding="utf8") as token_file:
-            tokens = json.load(token_file)
-            return tokens
-    except:
+        with open(filename, "r", encoding="utf8") as token_file:
+            return json.load(token_file)
+    except BaseException:
         return print(
             "Unable to open and parse token file. Did you run mit_dk_first_login.py?"
         )
 
 
-def revoke_old_tokens(mitdkToken, ngdpToken, dppRefreshToken, ngdpRefreshToken):
+def revoke_old_tokens(mitid_token, ngdp_token, dpp_refresh_token, ngdp_refresh_token):
+    """Revokes old tokens and refresh tokens."""
     endpoint = "authorization/revoke?client_id=view-client-id-mobile-prod-1-id"
     json_data = {
-        "dpp": {"token": mitdkToken, "token_type_hint": "access_token"},
-        "ngdp": {"token": ngdpToken, "token_type_hint": "access_token"},
+        "dpp": {"token": mitid_token, "token_type_hint": "access_token"},
+        "ngdp": {"token": ngdp_token, "token_type_hint": "access_token"},
     }
-    revoke_access_tokens = session.post(base_url + endpoint, json=json_data)
+    revoke_access_tokens = session.post(BASE_URL + endpoint, json=json_data)
     if not revoke_access_tokens.status_code == 200:
         print(
             "Something went wrong when trying to revoke old access tokens. Here is the response:"
         )
         print(revoke_access_tokens.text)
     json_data = {
-        "dpp": {"refresh_token": dppRefreshToken, "token_type_hint": "refresh_token"},
-        "ngdp": {"refresh_token": ngdpRefreshToken, "token_type_hint": "refresh_token"},
+        "dpp": {"refresh_token": dpp_refresh_token, "token_type_hint": "refresh_token"},
+        "ngdp": {
+            "refresh_token": ngdp_refresh_token,
+            "token_type_hint": "refresh_token",
+        },
     }
-    revoke_refresh_tokens = session.post(base_url + endpoint, json=json_data)
+    revoke_refresh_tokens = session.post(BASE_URL + endpoint, json=json_data)
     if not revoke_refresh_tokens.status_code == 200:
         print(
             "Something went wrong when trying to revoke old refresh tokens. Here is the response:"
@@ -58,13 +61,14 @@ def revoke_old_tokens(mitdkToken, ngdpToken, dppRefreshToken, ngdpRefreshToken):
         print(revoke_refresh_tokens.text)
 
 
-def refresh_and_save_tokens(dppRefreshToken, ngdpRefreshToken):
+def refresh_and_save_tokens(dpp_refresh_token, ngdp_refresh_token):
+    """Refreshes the tokens and saves them to the token file."""
     endpoint = "authorization/refresh?client_id=view-client-id-mobile-prod-1-id"
     json_data = {
-        "dppRefreshToken": dppRefreshToken,
-        "ngdpRefreshToken": ngdpRefreshToken,
+        "dppRefreshToken": dpp_refresh_token,
+        "ngdpRefreshToken": ngdp_refresh_token,
     }
-    refresh = session.post(base_url + endpoint, json=json_data)
+    refresh = session.post(BASE_URL + endpoint, json=json_data)
     if not refresh.status_code == 200:
         print("Something went wrong trying to fetch new tokens.")
     refresh_json = refresh.json()
@@ -72,61 +76,66 @@ def refresh_and_save_tokens(dppRefreshToken, ngdpRefreshToken):
         print("Something went wrong trying to fetch new tokens. Here's the response:")
         print(refresh_json)
         return False
-    else:
-        with open(config["files"]["tokens"], "wt", encoding="utf8") as token_file:
-            token_file.write(refresh.text)
-        return refresh_json
+
+    with open(config["files"]["tokens"], "wt", encoding="utf8") as token_file:
+        token_file.write(refresh.text)
+    return refresh_json
 
 
 def get_fresh_tokens_and_revoke_old_tokens():
-    tokens = open_tokens()
+    """Gets fresh tokens and revokes old tokens."""
+    tokens_from_file = open_tokens(config["files"]["tokens"])
     try:
-        if "dpp" in tokens:
-            dppRefreshToken = tokens["dpp"]["refresh_token"]
-            mitdkToken = tokens["dpp"]["access_token"]
+        if "dpp" in tokens_from_file:
+            dpp_refresh_token = tokens_from_file["dpp"]["refresh_token"]
+            mitdk_token = tokens_from_file["dpp"]["access_token"]
         else:
-            dppRefreshToken = tokens["refresh_token"]
-            mitdkToken = tokens["access_token"]
-        ngdpRefreshToken = tokens["ngdp"]["refresh_token"]
-        ngdpToken = tokens["ngdp"]["access_token"]
-        fresh_tokens = refresh_and_save_tokens(dppRefreshToken, ngdpRefreshToken)
+            dpp_refresh_token = tokens_from_file["refresh_token"]
+            mitdk_token = tokens_from_file["access_token"]
+        ngdp_refresh_token = tokens_from_file["ngdp"]["refresh_token"]
+        ngdp_token = tokens_from_file["ngdp"]["access_token"]
+        fresh_tokens = refresh_and_save_tokens(dpp_refresh_token, ngdp_refresh_token)
         if fresh_tokens:
-            revoke_old_tokens(mitdkToken, ngdpToken, dppRefreshToken, ngdpRefreshToken)
+            revoke_old_tokens(
+                mitdk_token, ngdp_token, dpp_refresh_token, ngdp_refresh_token
+            )
         return fresh_tokens
     except Exception as error:
         print(error)
         print(
             "Unable to find tokens in token file. Try running mit_dk_first_login.py again."
         )
+        return False
 
 
 def get_simple_endpoint(endpoint):
+    """Retrieves data from an endpoint and returns it as a dict."""
     tries = 1
     while tries <= 3:
-        response = session.get(base_url + endpoint)
+        response = session.get(f"{BASE_URL}{endpoint}")
         try:
-            response_json = response.json()
             return response.json()
-        except:
+        except BaseException:
             tries += 1
             time.sleep(1)
-            pass
+
     if tries == 3:
         print(
             f"Unable to convert response to json when getting endpoint {endpoint} after 3 tries. Here is the response:"
         )
         print(response.text)
-        return false
+        return False
 
 
 def get_inbox_folders_and_build_query(mailbox_ids):
+    """B"""
     endpoint = "folders/query"
     json_data = {"mailboxes": {}}
     for mailbox in mailbox_ids:
         json_data["mailboxes"][mailbox["dataSource"]] = mailbox["mailboxId"]
     tries = 1
     while tries <= 3:
-        response = session.post(base_url + endpoint, json=json_data)
+        response = session.post(f"{BASE_URL}{endpoint}", json=json_data)
         try:
             response_json = response.json()
             folders = []
@@ -139,16 +148,16 @@ def get_inbox_folders_and_build_query(mailbox_ids):
                 }
                 folders.append(folder_info)
             return folders
-        except:
+        except BaseException:
             tries += 1
             time.sleep(1)
-            pass
+
     if tries == 3:
         print(
             "Unable to convert response to json when getting folders. Here is the response:"
         )
         print(response.text)
-        return false
+        return False
 
 
 def get_messages(folders):
@@ -161,11 +170,10 @@ def get_messages(folders):
             "size": 20,
             "sortFields": ["receivedDateTime:DESC"],
         }
-        response = session.post(base_url + endpoint, json=json_data)
+        response = session.post(BASE_URL + endpoint, json=json_data)
         try:
-            response_json = response.json()
             return response.json()
-        except:
+        except BaseException:
             tries += 1
             time.sleep(1)
             pass
@@ -192,7 +200,7 @@ def get_content(message):
             encoding_format = file["encodingFormat"]
             file_name = file["filename"]
             file_url = "/files/" + file["id"] + "/content"
-            file_content = session.get(base_url + endpoint + doc_url + file_url)
+            file_content = session.get(BASE_URL + endpoint + doc_url + file_url)
             content.append(
                 {
                     "file_name": file_name,
@@ -213,10 +221,10 @@ def mark_as_read(message):
     )
     session.headers["If-Match"] = str(message["version"])
     json_data = {"read": True}
-    mark_as_read = session.patch(base_url + endpoint, json=json_data)
+    session.patch(BASE_URL + endpoint, json=json_data)
 
 
-mailserver_connect = False
+MAILSERVER_CONNECT = False
 tokens = get_fresh_tokens_and_revoke_old_tokens()
 if tokens:
     session.headers["mitdkToken"] = tokens["dpp"]["access_token"]
@@ -224,6 +232,7 @@ if tokens:
     session.headers["platform"] = "web"
     mailboxes = get_simple_endpoint("mailboxes")
     mailbox_ids = []
+
     for mailboxes in mailboxes["groupedMailboxes"]:
         for mailbox in mailboxes["mailboxes"]:
             mailbox_info = {
@@ -236,14 +245,16 @@ if tokens:
     server_config = config["email"]["server"]
     email_creds = config["email"]["credentials"]
     email_options = config["email"]["options"]
+
     for message in messages["results"]:
-        if message["read"] == False:
-            if mailserver_connect == False:
+        if message["read"] is False:
+            if not MAILSERVER_CONNECT:
                 server = smtplib.SMTP(server_config["host"], int(server_config["port"]))
                 server.ehlo()
                 server.starttls()
                 server.login(email_creds["username"], email_creds["password"])
-                mailserver_connect = True
+                MAILSERVER_CONNECT = True
+
             label = message["label"]
             sender = message["sender"]["label"]
             message_content = get_content(message)
@@ -298,5 +309,5 @@ if tokens:
             print(f"Sender en mail fra mit.dk fra {sender} med emnet {label}")
             server.sendmail(email_options["from"], email_options["to"], msg.as_string())
             mark_as_read(message)
-    if mailserver_connect:
+    if MAILSERVER_CONNECT:
         server.quit()
