@@ -14,6 +14,7 @@ from time import sleep
 
 import chromedriver_autoinstaller
 import requests
+import tomllib
 from bs4 import BeautifulSoup
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
@@ -22,9 +23,11 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from seleniumwire import webdriver
 
-from mit_dk_configuration import mitid_username, tokens_filename
-
 chromedriver_autoinstaller.install()
+
+# Load variables from config file
+with open("mit_dk_config.toml", "rb") as f:
+    config = tomllib.load(f)
 
 
 def random_string(size):
@@ -43,7 +46,7 @@ def random_string(size):
 
 
 def save_tokens(response):
-    with open(tokens_filename, "wt", encoding="utf8") as token_file:
+    with open(config["files"]["tokens"], "wt", encoding="utf8") as token_file:
         token_file.write(response)
 
 
@@ -308,7 +311,7 @@ if samlresponse:
     request_tokens = session.post(token_url)
     save_tokens(request_tokens.text)
     print("Tokens successfully saved.")
-    print(f"Tokens saved to {tokens_filename}.")
+    print(f"Tokens saved to {config['files']['tokens']}.")
 else:
     print(
         "Something went wrong during login with MitID or NemID. Did you complete the login procedure?"

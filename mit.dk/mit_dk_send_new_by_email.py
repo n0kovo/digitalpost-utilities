@@ -2,6 +2,7 @@
 import json
 import smtplib  # Sending e-mails
 import time
+import tomllib  # For parsing toml config file
 from email.mime.application import MIMEApplication  # Attaching files to e-mails
 from email.mime.multipart import MIMEMultipart  # Creating multipart e-mails
 from email.mime.text import MIMEText  # Attaching text to e-mails
@@ -11,7 +12,8 @@ from email.utils import formataddr
 
 import requests
 
-from mit_dk_configuration import email_data, tokens_filename
+with open("mit_dk_config.toml", "rb") as f:
+    config = tomllib.load(f)
 
 
 base_url = "https://gateway.mit.dk/view/client/"
@@ -20,7 +22,7 @@ session = requests.Session()
 
 def open_tokens():
     try:
-        with open(tokens_filename, "r", encoding="utf8") as token_file:
+        with open(config["files"]["tokens"], "r", encoding="utf8") as token_file:
             tokens = json.load(token_file)
             return tokens
     except:
@@ -68,7 +70,7 @@ def refresh_and_save_tokens(dppRefreshToken, ngdpRefreshToken):
         print(refresh_json)
         return False
     else:
-        with open(tokens_filename, "wt", encoding="utf8") as token_file:
+        with open(config["files"]["tokens"], "wt", encoding="utf8") as token_file:
             token_file.write(refresh.text)
         return refresh_json
 
@@ -228,23 +230,26 @@ if tokens:
             mailbox_ids.append(mailbox_info)
     folders = get_inbox_folders_and_build_query(mailbox_ids)
     messages = get_messages(folders)
+    server_config = config["email"]["server"]
+    email_creds = config["email"]["credentials"]
+    email_options = config["email"]["options"]
     for message in messages["results"]:
         if message["read"] == False:
             if mailserver_connect == False:
                 server = smtplib.SMTP(
-                    email_data["emailserver"], int(email_data["emailserverport"])
+                    server_config["host"], int(server_config["port"])
                 )
                 server.ehlo()
                 server.starttls()
-                server.login(email_data["emailusername"], email_data["emailpassword"])
+                server.login(email_creds["username"], email_creds["password"])
                 mailserver_connect = True
             label = message["label"]
             sender = message["sender"]["label"]
             message_content = get_content(message)
 
             msg = MIMEMultipart("alternative")
-            msg["From"] = formataddr((sender, email_data["emailfrom"]))
-            msg["To"] = email_data["emailto"]
+            msg["From"] = formataddr((sender, ))
+            msg["To"] = email_options["to"]
             msg["Subject"] = "mit.dk: " + label
 
             for content in message_content:
@@ -291,7 +296,7 @@ if tokens:
                     msg.attach(part)
             print(f"Sender en mail fra mit.dk fra {sender} med emnet {label}")
             server.sendmail(
-                email_data["emailfrom"], email_data["emailto"], msg.as_string()
+                email_options["from"], email_options["to"], msg.as_string()
             )
             mark_as_read(message)
     if mailserver_connect:

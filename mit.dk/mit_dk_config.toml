@@ -1,0 +1,22 @@
+[files]
+# File for storing authentication tokens
+tokens = "mit_dk_tokens.json"
+
+[email]
+[email.server]
+# Your mail server hostname, e.g. host.server.dk
+host = ""
+# Mail server port, e.g. 465
+port = ""
+
+[email.credentials]
+# Sender mail account username
+email_username = ""
+# Sender mail account password
+email_password = ""
+
+[email.options]
+# Sender e-mail, e.g. trump@usa.gov
+email_from = ""
+# Recipient e-mail, e.g. hillary@clinton.net
+email_to = ""
