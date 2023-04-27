@@ -25,8 +25,8 @@ Step one
 Step two
 --------
 
-* Run `mit_dk_first_login.py` on a computer with a desktop browser. The program is set up to work with Chrome and `chromedriver`.
-* The program will open a browser window where you'll need to log on to mit.dk with your NemID or MitID.
+* Run `mit_dk_first_login.py`. The program is set up to work with Chrome and `chromedriver` in headless mode.
+* The program will start the login procedure and notify you when you need to approve the login using the MitID app.
 * If your login is successfull, the program will save access tokens for mit.dk to `mitdk_tokens.json`
 
 Step three
