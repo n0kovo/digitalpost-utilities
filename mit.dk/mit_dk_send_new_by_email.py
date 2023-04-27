@@ -1,17 +1,18 @@
 """Sends unread messages from mit.dk to an e-mail."""
-import requests
 import json
 import smtplib  # Sending e-mails
+import time
+from email.mime.application import MIMEApplication  # Attaching files to e-mails
 from email.mime.multipart import MIMEMultipart  # Creating multipart e-mails
 from email.mime.text import MIMEText  # Attaching text to e-mails
-from email.mime.application import MIMEApplication  # Attaching files to e-mails
 
-# Used for correct encoding of senders with
-# special characters in name (e.g. Københavns Kommune)
+# For correct encoding of senders with special chars in name:
 from email.utils import formataddr
 
+import requests
+
 from mit_dk_configuration import email_data, tokens_filename
-import time
+
 
 base_url = "https://gateway.mit.dk/view/client/"
 session = requests.Session()
