@@ -33,8 +33,8 @@ Step three
 
 * Immediately after completing step two, copy `mit_dk_get_and_send_mail.py`, `mit_dk_config.toml` and `mitdk_tokens.json` to a computer or server that is on 24/7 (if this is your computer from step two, no need to copy anything.)
 * If necessary edit the `files.tokens` field in `mit_dk_config.toml` to the full path of your `mitdk_tokens.json` file
-* Run `mit_dk__send_new_by_email.py` from this computer at specific intervals to fetch messages from mit.dk and send them to your e-mail. I recommend somewhere between 5 and 15 minutes between each run. The access token for mit.dk expires after approximately 20 minutes. The program refreshes the access tokens for mit.dk on each run.
-* If running `mit_dk__send_new_by_email.py` on Linux, set up a CRON job to automate running the program. If running the program on Windows, use Task Scheduler.
+* Run `mit_dk_send_new_by_email.py.py` from this computer at specific intervals to fetch messages from mit.dk and send them to your e-mail. I recommend somewhere between 5 and 15 minutes between each run. The access token for mit.dk expires after approximately 20 minutes. The program refreshes the access tokens for mit.dk on each run.
+* If running `mit_dk_send_new_by_email.py` on Linux, set up a CRON job to automate running the program. If running the program on Windows, use Task Scheduler.
 
 Questions
 =========
