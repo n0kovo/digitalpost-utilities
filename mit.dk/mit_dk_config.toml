@@ -5,6 +5,13 @@ tokens = "mit_dk_tokens.json"
 [mitid]
 # Your MitID username
 username = ""
+# List of patterns for searching in the MitID identities name and type.
+# Only required if you have multiple login identities.
+# The first identity matching all of the specified patterns is used.
+# You can specify multiple (RegEx) patterns. Examples:
+# identity_patterns = [ "John", "PRIVATE" ] 
+# identity_patterns = [ "LEASY A/S", "Peter" ]
+identity_patterns = [ "*" ] # Use the first identity
 
 [email]
 [email.server]
