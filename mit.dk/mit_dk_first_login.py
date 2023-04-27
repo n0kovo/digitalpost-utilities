@@ -1,25 +1,26 @@
 # Logs in to mit.dk og saves tokens needed for further requests.
 # Method from https://github.com/dk/Net-MitDK/. Thank you.
-from seleniumwire import webdriver
+import base64
+import gzip
+import http.cookies
+import json
+import secrets
+import string
+from hashlib import sha256
+from sys import exit
+from time import sleep
+
 import chromedriver_autoinstaller
 import requests
 from bs4 import BeautifulSoup
-import http.cookies
-import gzip
-import json 
-import base64
-from hashlib import sha256
-import string
-import secrets
-from mit_dk_configuration import tokens_filename, mitid_username
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.common.exceptions import TimeoutException
-from sys import exit
-from time import sleep
-import base64
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+from seleniumwire import webdriver
+
+from mit_dk_configuration import mitid_username, tokens_filename
 
 chromedriver_autoinstaller.install()
 
