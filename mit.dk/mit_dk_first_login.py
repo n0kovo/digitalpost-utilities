@@ -1,5 +1,7 @@
-# Logs in to mit.dk og saves tokens needed for further requests.
-# Method from https://github.com/dk/Net-MitDK/. Thank you.
+"""
+Logs in to mit.dk og saves tokens needed for further requests.
+Method from https://github.com/dk/Net-MitDK/. Thank you.
+"""
 import base64
 import gzip
 import http.cookies
