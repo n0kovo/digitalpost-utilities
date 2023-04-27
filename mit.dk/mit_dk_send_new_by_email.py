@@ -3,6 +3,7 @@ Sends unread messages from mit.dk to an e-mail.
 """
 import json
 import smtplib  # Sending e-mails
+from smtplib import SMTPNotSupportedError, SMTPServerDisconnected
 import time
 import tomllib  # For parsing toml config file
 from email.mime.application import MIMEApplication  # Attaching files to e-mails
@@ -243,15 +244,35 @@ if tokens:
     folders = get_inbox_folders_and_build_query(mailbox_ids)
     messages = get_messages(folders)
     server_config = config["email"]["server"]
+    email_server = f"{server_config['host']}:{server_config['port']}"
     email_creds = config["email"]["credentials"]
     email_options = config["email"]["options"]
 
     for message in messages["results"]:
         if message["read"] is False:
             if not MAILSERVER_CONNECT:
-                server = smtplib.SMTP(server_config["host"], int(server_config["port"]))
-                server.ehlo()
-                server.starttls()
+                print(f"Connecting to {email_server}")
+            
+                if server_config["ssl"]:
+                    try:
+                        server = smtplib.SMTP(f"{email_server}")
+                        server.starttls()
+                    
+                    except SMTPNotSupportedError:
+                        print(f"STARTTLS not supported on server")
+                        print("Trying to connect without...")
+                    
+                    except SMTPServerDisconnected:
+                        pass
+
+                    server = smtplib.SMTP_SSL(f"{email_server}")
+                    server.ehlo()
+                else:
+                    server = smtplib.SMTP(f"{email_server}")
+                    server.ehlo()
+            
+                
+
                 server.login(email_creds["username"], email_creds["password"])
                 MAILSERVER_CONNECT = True
 
@@ -260,7 +281,7 @@ if tokens:
             message_content = get_content(message)
 
             msg = MIMEMultipart("alternative")
-            msg["From"] = formataddr((sender,))
+            msg["From"] = formataddr((sender, email_options["from"]))
             msg["To"] = email_options["to"]
             msg["Subject"] = "mit.dk: " + label
 
