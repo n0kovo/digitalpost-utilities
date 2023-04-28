@@ -12,13 +12,7 @@ import string
 import sys
 from hashlib import sha256
 from time import sleep
-from typing import List, Optional, Dict
-
-try:
-    import tomllib
-except ImportError:
-    print("This script requires at least Python 3.11 to run.")
-    sys.exit(1)
+from typing import Dict, List, Optional
 
 import requests
 from bs4 import BeautifulSoup
@@ -28,6 +22,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 from seleniumwire import webdriver
+from yaml import Loader, load
 
 
 def random_string(size):

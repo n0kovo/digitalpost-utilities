@@ -3,20 +3,28 @@ Sends unread messages from mit.dk to an e-mail.
 """
 import json
 import smtplib  # Sending e-mails
-from smtplib import SMTPNotSupportedError, SMTPServerDisconnected
 import time
-import tomllib  # For parsing toml config file
-from email.mime.application import MIMEApplication  # Attaching files to e-mails
+from email.mime.application import \
+    MIMEApplication  # Attaching files to e-mails
 from email.mime.multipart import MIMEMultipart  # Creating multipart e-mails
 from email.mime.text import MIMEText  # Attaching text to e-mails
-
 # For correct encoding of senders with special chars in name:
 from email.utils import formataddr
+from smtplib import SMTPNotSupportedError, SMTPServerDisconnected
 
 import requests
+import yaml  # For parsing YAML config file
+from yaml.parser import ParserError
+from yaml.reader import ReaderError
+from yaml.scanner import ScannerError
 
-with open("mit_dk_config.toml", "rb") as f:
-    config = tomllib.load(f)
+with open("mit_dk_config.yaml", "rb") as f:
+    try:
+        config = yaml.load(f, Loader=yaml.Loader)
+    except (ScannerError, ParserError, ReaderError) as error:
+        print("Unable to parse YAML config file. Here is the error:")
+        print(error)
+        exit()
 
 
 BASE_URL = "https://gateway.mit.dk/view/client/"
@@ -224,109 +232,117 @@ def mark_as_read(message):
     json_data = {"read": True}
     session.patch(BASE_URL + endpoint, json=json_data)
 
+def main():
+    MAILSERVER_CONNECT = False
+    tokens = get_fresh_tokens_and_revoke_old_tokens()
+    if tokens:
+        session.headers["mitdkToken"] = tokens["dpp"]["access_token"]
+        session.headers["ngdpToken"] = tokens["ngdp"]["access_token"]
+        session.headers["platform"] = "web"
+        mailboxes = get_simple_endpoint("mailboxes")
+        mailbox_ids = []
 
-MAILSERVER_CONNECT = False
-tokens = get_fresh_tokens_and_revoke_old_tokens()
-if tokens:
-    session.headers["mitdkToken"] = tokens["dpp"]["access_token"]
-    session.headers["ngdpToken"] = tokens["ngdp"]["access_token"]
-    session.headers["platform"] = "web"
-    mailboxes = get_simple_endpoint("mailboxes")
-    mailbox_ids = []
+        for mailboxes in mailboxes["groupedMailboxes"]:
+            for mailbox in mailboxes["mailboxes"]:
+                mailbox_info = {
+                    "dataSource": mailbox["dataSource"],
+                    "mailboxId": mailbox["id"],
+                }
+                mailbox_ids.append(mailbox_info)
+        folders = get_inbox_folders_and_build_query(mailbox_ids)
+        messages = get_messages(folders)
+        server_config = config["email"]["server"]
+        email_server = f"{server_config['host']}:{server_config['port']}"
+        email_creds = config["email"]["credentials"]
+        email_options = config["email"]["options"]
 
-    for mailboxes in mailboxes["groupedMailboxes"]:
-        for mailbox in mailboxes["mailboxes"]:
-            mailbox_info = {
-                "dataSource": mailbox["dataSource"],
-                "mailboxId": mailbox["id"],
-            }
-            mailbox_ids.append(mailbox_info)
-    folders = get_inbox_folders_and_build_query(mailbox_ids)
-    messages = get_messages(folders)
-    server_config = config["email"]["server"]
-    email_server = f"{server_config['host']}:{server_config['port']}"
-    email_creds = config["email"]["credentials"]
-    email_options = config["email"]["options"]
+        for message in messages["results"]:
+            if message["read"] is False:
+                if not MAILSERVER_CONNECT:
+                    print(f"Connecting to {email_server}")
 
-    for message in messages["results"]:
-        if message["read"] is False:
-            if not MAILSERVER_CONNECT:
-                print(f"Connecting to {email_server}")
+                    if server_config["ssl"]:
+                        try:
+                            server = smtplib.SMTP(f"{email_server}")
+                            server.starttls()
 
-                if server_config["ssl"]:
-                    try:
+                        except SMTPNotSupportedError:
+                            print(f"STARTTLS not supported on server")
+                            print("Trying to connect without...")
+
+                        except SMTPServerDisconnected:
+                            pass
+
+                        server = smtplib.SMTP_SSL(f"{email_server}")
+                        server.ehlo()
+                    else:
                         server = smtplib.SMTP(f"{email_server}")
-                        server.starttls()
+                        server.ehlo()
 
-                    except SMTPNotSupportedError:
-                        print(f"STARTTLS not supported on server")
-                        print("Trying to connect without...")
+                    server.login(email_creds["username"], email_creds["password"])
+                    MAILSERVER_CONNECT = True
 
-                    except SMTPServerDisconnected:
-                        pass
+                label = message["label"]
+                sender = message["sender"]["label"]
+                message_content = get_content(message)
 
-                    server = smtplib.SMTP_SSL(f"{email_server}")
-                    server.ehlo()
-                else:
-                    server = smtplib.SMTP(f"{email_server}")
-                    server.ehlo()
+                msg = MIMEMultipart("alternative")
+                msg["From"] = formataddr((sender, email_options["from"]))
+                msg["To"] = email_options["to"]
+                msg["Subject"] = "mit.dk: " + label
 
-                server.login(email_creds["username"], email_creds["password"])
-                MAILSERVER_CONNECT = True
+                for content in message_content:
+                    if content["encoding_format"] == "text/plain":
+                        body = content["file_content"].text
+                        msg.attach(MIMEText(body, "plain"))
+                        part = MIMEApplication(content["file_content"].content)
+                        part.add_header(
+                            "Content-Disposition",
+                            "attachment",
+                            filename=content["file_name"],
+                        )
+                        msg.attach(part)
+                    elif content["encoding_format"] == "text/html":
+                        body = content["file_content"].text
+                        msg.attach(MIMEText(body, "html"))
+                        part = MIMEApplication(content["file_content"].content)
+                        part.add_header(
+                            "Content-Disposition",
+                            "attachment",
+                            filename=content["file_name"],
+                        )
+                        msg.attach(part)
+                    elif (
+                        content["encoding_format"] == "application/pdf"
+                        or content["encoding_format"] == "text/xml"
+                    ):
+                        part = MIMEApplication(content["file_content"].content)
+                        part.add_header(
+                            "Content-Disposition",
+                            "attachment",
+                            filename=content["file_name"],
+                        )
+                        msg.attach(part)
+                    else:
+                        encoding_format = content["encoding_format"]
+                        print(f"Ny filtype {encoding_format}")
+                        part = MIMEApplication(content["file_content"].content)
+                        part.add_header(
+                            "Content-Disposition",
+                            "attachment",
+                            filename=content["file_name"],
+                        )
+                        msg.attach(part)
+                print(f"Sender en mail fra mit.dk fra {sender} med emnet {label}")
+                server.sendmail(email_options["from"], email_options["to"], msg.as_string())
+                mark_as_read(message)
+        if MAILSERVER_CONNECT:
+            server.quit()
 
-            label = message["label"]
-            sender = message["sender"]["label"]
-            message_content = get_content(message)
 
-            msg = MIMEMultipart("alternative")
-            msg["From"] = formataddr((sender, email_options["from"]))
-            msg["To"] = email_options["to"]
-            msg["Subject"] = "mit.dk: " + label
+def lambda_handler(event, context):
+    main()
 
-            for content in message_content:
-                if content["encoding_format"] == "text/plain":
-                    body = content["file_content"].text
-                    msg.attach(MIMEText(body, "plain"))
-                    part = MIMEApplication(content["file_content"].content)
-                    part.add_header(
-                        "Content-Disposition",
-                        "attachment",
-                        filename=content["file_name"],
-                    )
-                    msg.attach(part)
-                elif content["encoding_format"] == "text/html":
-                    body = content["file_content"].text
-                    msg.attach(MIMEText(body, "html"))
-                    part = MIMEApplication(content["file_content"].content)
-                    part.add_header(
-                        "Content-Disposition",
-                        "attachment",
-                        filename=content["file_name"],
-                    )
-                    msg.attach(part)
-                elif (
-                    content["encoding_format"] == "application/pdf"
-                    or content["encoding_format"] == "text/xml"
-                ):
-                    part = MIMEApplication(content["file_content"].content)
-                    part.add_header(
-                        "Content-Disposition",
-                        "attachment",
-                        filename=content["file_name"],
-                    )
-                    msg.attach(part)
-                else:
-                    encoding_format = content["encoding_format"]
-                    print(f"Ny filtype {encoding_format}")
-                    part = MIMEApplication(content["file_content"].content)
-                    part.add_header(
-                        "Content-Disposition",
-                        "attachment",
-                        filename=content["file_name"],
-                    )
-                    msg.attach(part)
-            print(f"Sender en mail fra mit.dk fra {sender} med emnet {label}")
-            server.sendmail(email_options["from"], email_options["to"], msg.as_string())
-            mark_as_read(message)
-    if MAILSERVER_CONNECT:
-        server.quit()
+
+if __name__ == "__main__":
+    main()
