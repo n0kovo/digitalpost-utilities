@@ -537,7 +537,7 @@ def main():
     try:
         print("Starting login process...")
         init_login()
-        submit_username(username)
+        submit_username()
         wait_for_approval()
 
         # Give time for potential redirects
