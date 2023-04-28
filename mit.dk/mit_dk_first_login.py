@@ -564,7 +564,7 @@ def main():
     session = requests.Session()
 
     saml_response = process_requests(session)
-    handle_post_login(session, saml_response, code_verifier)
+    handle_post_login(session, saml_response)
 
 
 if __name__ == "__main__":
