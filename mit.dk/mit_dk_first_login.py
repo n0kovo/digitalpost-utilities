@@ -50,8 +50,8 @@ def random_string(size):
 with open("mit_dk_config.toml", "rb") as f:
     try:
         config = tomllib.load(f)
-        username  = config["mitid"]["username"]
-        token_path  = config["files"]["tokens"]
+        username = config["mitid"]["username"]
+        token_path = config["files"]["tokens"]
 
         try:
             identity_patterns = config["mitid"]["identity_patterns"]
@@ -219,7 +219,7 @@ def handle_login_options() -> None:
     login_options[matched_identity].click()
 
 
-def submit_username(username: str) -> None:
+def submit_username() -> None:
     """Submit the username to the MitID login form and wait for the success indicator.
 
     This function will:
@@ -227,9 +227,6 @@ def submit_username(username: str) -> None:
     2. Submit the form.
     3. Wait for a success tooltip indicating that the MitID app should be used for approval.
     4. In case of a timeout, exit the script and close the browser.
-
-    Args:
-        username (str): The username to be submitted in the login form.
 
     Returns:
         None
@@ -477,15 +474,15 @@ def extract_authorization_code(redirect_location: str) -> str:
     return redirect_location[code_start:code_end]
 
 
-def request_tokens(session: Union[bytes, str], code: str, redirect_url: str) -> str:
+def request_tokens(session: Union[bytes, str], auth_code: str) -> str:
     """Requests and returns access and refresh tokens,
     using the given authorization code, code verifier, and redirect URL."""
     token_url = (
         "https://gateway.mit.dk/view/client/authorization/token"
         "?grant_type=authorization_code&redirect_uri="
-        + redirect_url
+        + REDIRECT_URL
         + "&client_id=view-client-id-mobile-prod-1-id&code="
-        + code
+        + auth_code
         + "&code_verifier="
         + code_verifier
     )
@@ -495,8 +492,6 @@ def request_tokens(session: Union[bytes, str], code: str, redirect_url: str) -> 
 def handle_post_login(
     session: Union[bytes, str],
     saml_response: str,
-    code_verifier: str,
-    redirect_url: str,
 ) -> None:
     """
     Handles the post-login process after successful MitID or NemID authentication.
@@ -519,9 +514,7 @@ def handle_post_login(
         redirect_location_2 = process_redirects(session, redirect_location_1)
         redirect_location_3 = process_redirects(session, redirect_location_2)
         authorization_code = extract_authorization_code(redirect_location_3)
-        token_response = request_tokens(
-            session, authorization_code, code_verifier, redirect_url
-        )
+        token_response = request_tokens(session, authorization_code, REDIRECT_URL)
         save_tokens(token_response.text)
         print("Tokens successfully saved.")
         print(f"Tokens saved to {config['files']['tokens']}.")
@@ -557,10 +550,10 @@ def main():
         if "LoginOption.aspx" in driver.current_url:
             handle_login_options()
 
-    except Exception as error:
+    except Exception as login_error:
         print("ERROR: Failed during login")
         driver.quit()
-        raise error
+        raise login_error
 
     # Wait for oauth process and redirection to post.mit.dk
     wait = WebDriverWait(driver, 30)
@@ -571,7 +564,7 @@ def main():
     session = requests.Session()
 
     saml_response = process_requests(session)
-    handle_post_login(session, saml_response, code_verifier, REDIRECT_URL)
+    handle_post_login(session, saml_response, code_verifier)
 
 
 if __name__ == "__main__":
