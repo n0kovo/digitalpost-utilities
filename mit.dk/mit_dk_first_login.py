@@ -516,8 +516,7 @@ def handle_post_login(
         authorization_code = extract_authorization_code(redirect_location_3)
         token_response = request_tokens(session, authorization_code)
         save_tokens(token_response.text)
-        print("Tokens successfully saved.")
-        print(f"Tokens saved to {config['files']['tokens']}.")
+        print(f"Tokens successfully retrieved and saved to {config['files']['tokens']}.")
     else:
         print(
             "Something went wrong during login with MitID or NemID. "
