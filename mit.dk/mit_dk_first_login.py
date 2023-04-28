@@ -48,11 +48,21 @@ def random_string(size):
 
 # Load variables from config file
 with open("mit_dk_config.toml", "rb") as f:
-    config = tomllib.load(f)
-try:
-    identity_patterns = config["mitid"]["identity_patterns"]
-except KeyError:
-    identity_patterns = []
+    try:
+        config = tomllib.load(f)
+        username  = config["mitid"]["username"]
+        token_path  = config["files"]["tokens"]
+
+        try:
+            identity_patterns = config["mitid"]["identity_patterns"]
+        except KeyError:
+            # If no identity patterns are specified, match all identities
+            identity_patterns = []
+
+    except (tomllib.TOMLDecodeError, KeyError) as error:
+        print(f"Error loading configuration file: {error}")
+        sys.exit(1)
+
 
 SAML_RESPONSE = ""
 state = random_string(23)
@@ -110,7 +120,7 @@ driver.execute_cdp_cmd(
 
 def save_tokens(response: str) -> None:
     """Save tokens from response to file."""
-    with open(config["files"]["tokens"], "wt", encoding="utf8") as token_file:
+    with open(token_path, "wt", encoding="utf8") as token_file:
         token_file.write(response)
 
 
@@ -233,7 +243,7 @@ def submit_username(username: str) -> None:
     while True:
         counter += 1
 
-        # Wait 10*3 seconds for element indicating submission success
+        # Wait 10*4 seconds for element indicating submission success
         if counter > 10:
             print("ERROR: Timeout waiting for submission response. Exiting.")
             driver.quit()
@@ -249,7 +259,7 @@ def submit_username(username: str) -> None:
         ]
         if any(tooltip.text == string for string in tooltip_success_strings):
             break
-        sleep(3)
+        sleep(4)
 
 
 def wait_for_approval() -> None:
@@ -485,6 +495,7 @@ def request_tokens(session: Union[bytes, str], code: str, redirect_url: str) -> 
 def handle_post_login(
     session: Union[bytes, str],
     saml_response: str,
+    code_verifier: str,
     redirect_url: str,
 ) -> None:
     """
@@ -531,8 +542,9 @@ def main():
     to perform the login process.
     """
     try:
+        print("Starting login process...")
         init_login()
-        submit_username(config["mitid"]["username"])
+        submit_username(username)
         wait_for_approval()
 
         # Give time for potential redirects
@@ -559,7 +571,7 @@ def main():
     session = requests.Session()
 
     saml_response = process_requests(session)
-    handle_post_login(session, saml_response, code_verifier, REDIRECT_URL, config)
+    handle_post_login(session, saml_response, code_verifier, REDIRECT_URL)
 
 
 if __name__ == "__main__":
