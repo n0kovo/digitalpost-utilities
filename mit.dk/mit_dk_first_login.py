@@ -26,7 +26,7 @@ from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.wait import WebDriverWait
 from seleniumwire import webdriver
 
 
@@ -124,7 +124,7 @@ def save_tokens(response: str) -> None:
         token_file.write(response)
 
 
-def get_user_choice(options: List[Union[str, int]]) -> Union[str, int]:
+def get_user_choice(options):
     """Get user choice from a list of options and return the chosen option"""
     while True:
         try:
@@ -299,7 +299,7 @@ def init_login() -> None:
     )
 
 
-def get_saml_response(mitid_request: Union[bytes, str]) -> str:
+def get_saml_response(mitid_request) -> str:
     """Extract the SAMLResponse from the MitID login form.
 
     This function will:
@@ -324,12 +324,12 @@ def get_saml_response(mitid_request: Union[bytes, str]) -> str:
     return samlresponse
 
 
-def process_cookies(session: Union[bytes, str], request: Union[bytes, str]) -> None:
+def process_cookies(session, request) -> None:
     """Extracts and updates session cookies from the response headers of the given request.
 
     Args:
         session: A session object to update with the extracted cookies.
-        request (Union[bytes, str]): The request whose response headers contain the cookies.
+        request: The request whose response headers contain the cookies.
 
     Returns:
         None
@@ -356,7 +356,7 @@ def process_cookies(session: Union[bytes, str], request: Union[bytes, str]) -> N
             session.cookies.update(cookie)
 
 
-def find_saml_response(driver_requests: List[Union[bytes, str]]) -> str:
+def find_saml_response(driver_requests) -> str:
     """Find the SAMLResponse from the driver's requests based on specific conditions.
 
     This function iterates through the provided driver_requests and looks for a request
@@ -377,7 +377,7 @@ def find_saml_response(driver_requests: List[Union[bytes, str]]) -> str:
     Returns:
         str: The extracted SAMLResponse value, or None if no matching request is found.
     """
-    saml_response = None
+    saml_response = ""
     for request in driver_requests:
         if (
             request.method == "POST"
@@ -400,7 +400,7 @@ def find_saml_response(driver_requests: List[Union[bytes, str]]) -> str:
     return saml_response
 
 
-def set_initial_cookies(session: Union[bytes, str]) -> None:
+def set_initial_cookies(session) -> None:
     """Set initial cookies required for the login process in the given session.
 
     Args:
@@ -410,7 +410,7 @@ def set_initial_cookies(session: Union[bytes, str]) -> None:
     session.cookies.set("loginMethod", "noeglekort", domain="nemlog-in.mitid.dk")
 
 
-def process_requests(session: Union[bytes, str]) -> str:
+def process_requests(session) -> str:
     """Process requests from the Selenium WebDriver to extract cookies and find the SAMLResponse.
 
     This function sets the initial cookies, iterates through the driver's requests,
@@ -434,7 +434,7 @@ def process_requests(session: Union[bytes, str]) -> str:
     return saml_response
 
 
-def process_saml_response(session: Union[bytes, str], saml_response: str) -> str:
+def process_saml_response(session, saml_response: str) -> str:
     """Posts the SAML response to the Digital Post gateway and returns the redirect location.
 
     Args:
@@ -452,7 +452,7 @@ def process_saml_response(session: Union[bytes, str], saml_response: str) -> str
     return request_code_part_one.headers["Location"]
 
 
-def process_redirects(session: Union[bytes, str], redirect_location: str) -> str:
+def process_redirects(session, redirect_location: str) -> str:
     """Processes a redirect by sending a GET request to the given location
     and returning a location header.
 
@@ -474,7 +474,7 @@ def extract_authorization_code(redirect_location: str) -> str:
     return redirect_location[code_start:code_end]
 
 
-def request_tokens(session: Union[bytes, str], auth_code: str) -> str:
+def request_tokens(session, auth_code: str):
     """Requests and returns access and refresh tokens,
     using the given authorization code, code verifier, and redirect URL."""
     token_url = (
@@ -490,7 +490,7 @@ def request_tokens(session: Union[bytes, str], auth_code: str) -> str:
 
 
 def handle_post_login(
-    session: Union[bytes, str],
+    session,
     saml_response: str,
 ) -> None:
     """
@@ -514,7 +514,7 @@ def handle_post_login(
         redirect_location_2 = process_redirects(session, redirect_location_1)
         redirect_location_3 = process_redirects(session, redirect_location_2)
         authorization_code = extract_authorization_code(redirect_location_3)
-        token_response = request_tokens(session, authorization_code, REDIRECT_URL)
+        token_response = request_tokens(session, authorization_code)
         save_tokens(token_response.text)
         print("Tokens successfully saved.")
         print(f"Tokens saved to {config['files']['tokens']}.")
