@@ -531,9 +531,9 @@ def main():
     to perform the login process.
     """
     try:
-        init_login(driver)
-        submit_username(driver, config["mitid"]["username"])
-        wait_for_approval(driver)
+        init_login()
+        submit_username(config["mitid"]["username"])
+        wait_for_approval()
 
         # Give time for potential redirects
         try:
@@ -543,7 +543,7 @@ def main():
             pass
 
         if "LoginOption.aspx" in driver.current_url:
-            handle_login_options(driver)
+            handle_login_options()
 
     except Exception as error:
         print("ERROR: Failed during login")
