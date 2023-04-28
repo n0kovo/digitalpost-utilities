@@ -44,6 +44,10 @@ def random_string(size):
 # Load variables from config file
 with open("mit_dk_config.toml", "rb") as f:
     config = tomllib.load(f)
+try:
+    identity_patterns = config["mitid"]["identity_patterns"]
+except KeyError:
+    identity_patterns = []
 
 SAML_RESPONSE = ""
 state = random_string(23)
@@ -129,8 +133,6 @@ def match_identity(identities: List[Dict[str, str]]) -> Optional[int]:
         int: The index of the matched identity in the list or None if no match is found.
     """
 
-    identity_patterns = config["mitid"]["identity_patterns"]
-
     def matches_all_patterns(string_to_search: str, patterns: List[str]) -> bool:
         for pattern in patterns:
             if not re.search(pattern, string_to_search):
@@ -179,7 +181,7 @@ def handle_login_options() -> None:
         print(f"\t{i+1}: {identity_name}\n\t\tType: {identity_type}\n")
         identities_for_matching.append({"name": identity_name, "type": identity_type})
 
-    if not config["mitid"]["identity_patterns"]:
+    if not identity_patterns:
         print("No identity patterns configured. Please choose an identity to login as.")
         identity_choice = get_user_choice(login_options)
         identity_choice.click()
