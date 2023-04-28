@@ -22,7 +22,10 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 from seleniumwire import webdriver
-from yaml import Loader, load
+import yaml
+from yaml.scanner import ScannerError
+from yaml.parser import ParserError
+from yaml.reader import ReaderError
 
 
 def random_string(size):
@@ -42,9 +45,10 @@ def random_string(size):
 
 
 # Load variables from config file
-with open("mit_dk_config.toml", "rb") as f:
+with open("mit_dk_config.yaml", "rb") as f:
+    
     try:
-        config = tomllib.load(f)
+        config = yaml.load(f, Loader=yaml.Loader)
         username = config["mitid"]["username"]
         token_path = config["files"]["tokens"]
 
@@ -54,7 +58,7 @@ with open("mit_dk_config.toml", "rb") as f:
             # If no identity patterns are specified, match all identities
             identity_patterns = []
 
-    except (tomllib.TOMLDecodeError, KeyError) as error:
+    except (ScannerError, ParserError, ReaderError) as error:
         print(f"Error loading configuration file: {error}")
         sys.exit(1)
 
