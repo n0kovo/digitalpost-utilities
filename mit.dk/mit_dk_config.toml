@@ -11,7 +11,7 @@ username = ""
 # You can specify multiple (RegEx) patterns. Examples:
 # identity_patterns = [ "John", "PRIVATE" ] 
 # identity_patterns = [ "LEASY A/S", "Peter" ]
-identity_patterns = [ "*" ] # Use the first identity
+identity_patterns = [ ".*" ] # Use the first identity
 
 [email]
 [email.server]
