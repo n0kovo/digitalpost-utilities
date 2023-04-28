@@ -12,7 +12,7 @@ import string
 import sys
 from hashlib import sha256
 from time import sleep
-from typing import List, Union, Optional, Dict
+from typing import List, Optional, Dict
 
 try:
     import tomllib
