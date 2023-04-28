@@ -14,7 +14,12 @@ from hashlib import sha256
 from time import sleep
 from typing import List, Union, Optional, Dict
 
-import tomllib
+try:
+    import tomllib
+except ImportError:
+    print("This script requires at least Python 3.11 to run.")
+    sys.exit(1)
+
 import requests
 from bs4 import BeautifulSoup
 from selenium.common.exceptions import TimeoutException
